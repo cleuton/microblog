@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Microblog</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
+<script>
+var sessao = null;
+var usuario = null;
+var password = null;
+$(document).ready(function(){
+	$.postJSON = function(url, data, callback) {
+	    return jQuery.ajax({
+	    'type': 'POST',
+	    'url': url,
+	    'contentType': 'application/json',
+	    'data': JSON.stringify(data),
+	    'dataType': 'json',
+	    'success': callback
+	    });
+	};	
+	
+	  $("#logon").click(function(){
+		    if (!$("#username").val()) {
+		    	window.alert("Informe o username");
+		    }
+		    else {
+		    	if (!$("#password").val()) {
+		    		window.alert("Informe a password");
+		    	}
+		    	else {
+		    		$.get("/mb/server/session/" 
+		    				+ $("#username").val()
+		    				+ "/"
+		    				+ $("#password").val(),
+		    				function(responseTxt,statusTxt,xhr) {
+		    					if (xhr.status == 200) {
+		    						sessao = responseTxt;
+		    						alert("Logon ok");
+		    						showUser();
+		    						updateMessages();
+		    					}
+		    					else {
+		    						alert("Erro: " + statusTxt);
+		    					}
+		    				}
+		    				);
+		    	}
+		    }
+		});
+	  
+	  $("#refresh").click(function(){
+		 updateMessages(); 
+	  });
+});
+
+
+function showUser() {
+
+	$.postJSON("/mb/server/userdata", sessao, 
+			function(resposta) {
+		    	usuario = resposta;
+		    	$("#usuario").text(usuario.username);
+		  	}
+			);
+
+}
+function updateMessages() {
+	if (!sessao) {
+		alert("Tem que logar antes!");
+	}
+	else {
+		$("#mensagens").empty();
+		$("#mensagens").text("... aguardando ...");
+		$.postJSON("/mb/server/messages", sessao, 
+				function(resposta) {
+			    	var lista = resposta;
+			    	$("#mensagens").empty();
+			    	for (var x=0; x < lista.length; x++) {
+			    		var mensagem = lista[x];
+			    		$("#mensagens").append("<hr>" + new Date(mensagem.map.data.map.$date) + ", " + mensagem.map.texto);
+			    	}
+			  	}
+				);	
+		
+	}
+}
+</script>    
+</head>
+<body>
+<h1>Microblog</h1>
+<br/><span id="usuario">[nenhum usu&aacute;rio logado]</span>
+<br/>Username: <input type="text" name="username" id="username" />
+Password: <input type="password" name="password" id="password" />
+<input type="button" id="logon" value="Logon" />
+<hr/>
+<input type="button" id="refresh" value="Refresh" />
+<div id="mensagens"><span>[fa&ccedil;a logon para ver as mensagens]</span></div>
+</body>
+</html>
